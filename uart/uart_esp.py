@@ -14,7 +14,7 @@ while True:
         led.on()
         
         response = "Hola Pi"
-        uart.write(response)  # Enviar respuesta
+        uart.write(response)
         print(f"Mensaje enviado: {response}")
         time.sleep(1)
       
