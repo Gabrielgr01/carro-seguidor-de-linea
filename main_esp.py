@@ -79,13 +79,13 @@ def ejecutar_funcion (color):
         retroceder()
 
 def handle_start(pin):
-    global start_pin
-    start_pin = not start_pin
+    global start_flag
+    start_flag = not start_flag
     global irq_pin
     irq_pin = int(str(pin)[4:-1])
 
 # Configuracion de la interrupción
-start_pin.irq(trigger=Pin.IRQ_RAISING, handler=handle_start)
+start_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_start)
 
 # Bucle principal
 while True:
@@ -94,13 +94,10 @@ while True:
         led.on()
         color = detect_color()
         print(f"Color detectado: {color}")
-        ejecutar_funcion(color)
+        #ejecutar_funcion(color)
         
-        time.sleep(1)
+        time.sleep(0.1)
     else:
-        # Esto se ejecuta cuando no se ha iniciado el carrito (botón de start del pin 25)
-        # Se realiza la configuración inicial con los datos leídos de la interfaz
-        
         led.off()
 
         if uart.any():  # Si hay datos disponibles para leer
@@ -112,4 +109,4 @@ while True:
             response = "Hola Pi"
             uart.write(response)
             print(f"Mensaje enviado: {response}")
-        time.sleep(1)
+        time.sleep(0.1)
