@@ -9,10 +9,16 @@ global irq_pin
 global dict_colores_funciones
 global threshold
 global velocidad_base
+global bifur_sel
 
 start_flag = 0
 threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 500  # Velocidad base de los motores
+
+# Selector de la dirección de viraje cuando se da una bifurcación
+# 0 --> derecha
+# 1 --> izquierda
+bifur_sel = 0
 
 dict_colores_funciones = {
     # Diccionario temporal. Luego tiene que definirse de los datos recibidos de la interfaz
@@ -93,6 +99,7 @@ def detener_motores():
 def seguir_linea():
     sensorR = IR_derecha.read()
     sensorL = IR_izquierda.read()
+    viraje = ""
 
     print(f"Sensor Derecho: {sensorR}, Izquierdo: {sensorL}")
 
@@ -102,19 +109,36 @@ def seguir_linea():
         motor_a("adelante", velocidad_base)
         motor_b("adelante", velocidad_base)
     
-    # Si el sensor izquierdo detecta negro, corregir hacia la izquierda
-    elif sensorL > threshold:
+    # Si el sensor izquierdo detecta negro y el derecho blanco, corregir hacia la izquierda
+    elif (sensorL > threshold) and (sensorR < threshold):
         print("Corrigiendo hacia la izquierda.")
         motor_a("adelante", 0)  # Detener motor izquierdo
         motor_b("adelante", velocidad_base)
         time.sleep(0.1)  # Pausa para corrección
     
-    # Si el sensor derecho detecta negro, corregir hacia la derecha
-    elif sensorR > threshold:
+    # Si el sensor derecho detecta negro y el izquierdo blanco, corregir hacia la derecha
+    elif (sensorR > threshold) and (sensorL < threshold):
         print("Corrigiendo hacia la derecha.")
         motor_a("adelante", velocidad_base)
         motor_b("adelante", 0)  # Detener motor derecho
         time.sleep(0.1)  # Pausa para corrección
+
+    # Manejo de la bifurcación
+    # Si ambos sensores detectan negro se gira en una dirección seleccionada 
+    # con la variable global bifur_sel
+    elif (sensorR > threshold) and (sensorL > threshold):
+        
+        if (bifur_sel == 0):
+            viraje = "derecha"
+            motor_a("adelante", velocidad_base)
+            motor_b("adelante", 0) 
+
+        elif (bifur_sel ==1):
+            viraje = "izquierda"
+            motor_a("adelante", 0)
+            motor_b("adelante", velocidad_base)
+        
+        print(f"Bifurcación detectada, corrigiendo hacia la {viraje}")
 
 def retroceder():
     print("Ejecutando Retroceder")
@@ -192,6 +216,7 @@ start_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_start)
 # Bucle principal #
 ###################
 while True:
+
     start_flag = 1 # BORRAR ESTA LINEA PARA HABILITAR INTERRUPCION
 
     if start_flag == 1:
