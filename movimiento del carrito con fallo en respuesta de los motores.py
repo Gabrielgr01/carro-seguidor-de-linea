@@ -1,6 +1,11 @@
 from machine import Pin, PWM, ADC
 import time
 
+# Selector de la dirección de viraje cuando se da una bifurcación
+# 0 --> derecha
+# 1 --> izquierda
+bifur_sel = 0
+
 # Definir los pines de control para el Motor A (usando el L298)
 in1 = Pin(19, Pin.OUT)  # Pin para IN1 del Motor A
 in2 = Pin(18, Pin.OUT)  # Pin para IN2 del Motor A
@@ -23,6 +28,7 @@ threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 500  # Velocidad base de los motores
 
 # Función para controlar la dirección y velocidad del Motor A
+# El motor A es le izquierdo
 def motor_a(direccion, velocidad):
     if direccion == "adelante":
         in1.off()
@@ -37,6 +43,7 @@ def motor_a(direccion, velocidad):
     ena.duty(velocidad)
 
 # Función para controlar la dirección y velocidad del Motor B
+# El motor B es el derecho
 def motor_b(direccion, velocidad):
     if direccion == "adelante":
         in3.on()
@@ -59,6 +66,7 @@ def detener_motores():
 def seguir_linea():
     sensorR = IR_derecha.read()
     sensorL = IR_izquierda.read()
+    viraje = ""
 
     print(f"Sensor Derecho: {sensorR}, Izquierdo: {sensorL}")
 
@@ -69,18 +77,37 @@ def seguir_linea():
         motor_b("adelante", velocidad_base)
     
     # Si el sensor izquierdo detecta negro, corregir hacia la izquierda
-    elif sensorL > threshold:
+    elif (sensorL > threshold) and (sensorR < threshold):
         print("Corrigiendo hacia la izquierda.")
         motor_a("adelante", 0)  # Detener motor izquierdo
         motor_b("adelante", velocidad_base)
         time.sleep(0.1)  # Pausa para corrección
     
     # Si el sensor derecho detecta negro, corregir hacia la derecha
-    elif sensorR > threshold:
+    elif (sensorR > threshold) and (sensorL < threshold):
         print("Corrigiendo hacia la derecha.")
         motor_a("adelante", velocidad_base)
         motor_b("adelante", 0)  # Detener motor derecho
         time.sleep(0.1)  # Pausa para corrección
+
+    # Manejo de la bifurcación
+    # Si ambos sensores detectan negro se gira en una dirección seleccionada 
+    # con la variable global bifur_sel
+    elif (sensorR > threshold) and (sensorL > threshold):
+        
+        if (bifur_sel == 0):
+            viraje = "derecha"
+            motor_a("adelante", velocidad_base)
+            motor_b("adelante", 0) 
+
+        elif (bifur_sel == 1):
+            viraje = "izquierda"
+            motor_a("adelante", 0)
+            motor_b("adelante", velocidad_base)
+        
+        time.sleep(0.1)  # Pausa para corrección
+        print(f"Bifurcación detectada, corrigiendo hacia la {viraje}.")
+            
 
 # Bucle principal
 try:
