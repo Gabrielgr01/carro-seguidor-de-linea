@@ -37,7 +37,7 @@ dict_colores_funciones = {
 start_pin = Pin(25, Pin.IN)
 ### Pines Comunicacion UART ###
 uart = UART(1, baudrate=9600, tx=Pin(17), rx=Pin(16))  # Tx en pin 17 y Rx en pin 16
-led = Pin(2, Pin.Ohttps://github.com/Gabrielgr01/carro-seguidor-de-linea/pull/2/conflict?name=main_esp.py&ancestor_oid=042a311ae6ef78ea53af4259b36d198ddd3b6911&base_oid=93cedf58a2ca8d49cf2aeb9c9cb52a911d04c578&head_oid=d4307c163496b9a0741b6394a0243de61debeac6UT)
+led = Pin(2, Pin.OUT)
 ### Pines sensor de color ###
 S0 = Pin(2, Pin.OUT) 
 S1 = Pin(15, Pin.OUT)
