@@ -16,12 +16,13 @@ velocidad_base = 500  # Velocidad base de los motores
 
 dict_colores_funciones = {
     # Diccionario temporal. Luego tiene que definirse de los datos recibidos de la interfaz
-    "Negro":"Seguir linea",
-    "Blanco":"",
-    "Rojo":"Frenar",
-    "Azul":"Retroceder",
-    "Verde":"Cambiar velocidad"
+    "Seguir linea":"Negro",
+    "":"Blanco",
+    "Frenar":"Rojo",
+    "Retroceder":"Verde",
+    "Delta_v":"Azul"
 }
+
 
 ###########################
 # Inicialización de Pines #
@@ -32,7 +33,7 @@ start_pin = Pin(25, Pin.IN)
 uart = UART(1, baudrate=9600, tx=Pin(17), rx=Pin(16))  # Tx en pin 17 y Rx en pin 16
 led = Pin(2, Pin.OUT)
 ### Pines sensor de color ###
-S0 = Pin(16, Pin.OUT) 
+S0 = Pin(2, Pin.OUT) 
 S1 = Pin(15, Pin.OUT)
 S2 = Pin(12, Pin.OUT)
 S3 = Pin(14, Pin.OUT)
@@ -42,7 +43,7 @@ S1.value(1)
 ### Pines Motores ###
 in1 = Pin(19, Pin.OUT)  # Pin para IN1 del Motor A (L298)
 in2 = Pin(18, Pin.OUT)  # Pin para IN2 del Motor A (L298)
-ena = PWM(Pin(17), freq=2000)  # Pin para ENA del Motor A (PWM)
+ena = PWM(Pin(5), freq=2000)  # Pin para ENA del Motor A (PWM)
 in3 = Pin(22, Pin.OUT)  # Pin para IN3 del Motor B
 in4 = Pin(23, Pin.OUT)  # Pin para IN4 del Motor B
 enb = PWM(Pin(21), freq=2000)  # Pin para ENB del Motor B (PWM)
@@ -182,6 +183,36 @@ def handle_start(pin):
     start_flag = not start_flag
     global irq_pin
     irq_pin = int(str(pin)[4:-1])
+    
+
+### Función para interpretar el mensaje UART
+def interpretar_mensaje_UART(message):
+    global dict_colores_funciones
+    
+    lista_datos = message.split(" ")
+    size_list = len(lista_datos)
+    print(size_list)
+    if size_list == 1:
+        if lista_datos[0] == "Inicio":
+            #ejecutar funcion inicio
+            print("encender motores")
+        elif lista_datos[0] == "Fin":
+            #ejecutar funcion de apagar motores
+            print("apagar motores")
+    elif size_list > 1:
+        color_frenar = lista_datos[0]
+        color_retroceder = lista_datos[1]
+        color_delta_v = lista_datos[2]
+        print (color_frenar)
+        print (color_retroceder)
+        print (color_delta_v)
+        dict_colores_funciones = {
+            "Seguir linea":"Negro",
+            "Corregir_linea":"Blanco",
+            "Frenar":color_frenar,
+            "Retroceder":color_retroceder,
+            "Delta_v":color_delta_v
+        }
 
 ####################################
 # Configuracion de la interrupción #
@@ -192,8 +223,8 @@ start_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_start)
 # Bucle principal #
 ###################
 while True:
-    start_flag = 1 # BORRAR ESTA LINEA PARA HABILITAR INTERRUPCION
-
+    #start_flag = 1 # BORRAR ESTA LINEA PARA HABILITAR INTERRUPCION
+    
     if start_flag == 1:
         led.on()
         color = detect_color()
@@ -209,8 +240,14 @@ while True:
             # Hay que definir un diccionario que relacione cada color con su función
             # Ejemplo: Rojo -> Frenar, Azul -> Retroceder
             print(f"Mensaje recibido de la Raspberry Pi: {message}")
-        
-            response = "Hola Pi"
+            
+            response = "Hola Pi\n"
             uart.write(response)
             print(f"Mensaje enviado: {response}")
-        time.sleep(0.1)
+            
+            interpretar_mensaje_UART(message)
+            print(dict_colores_funciones)
+            
+            time.sleep(1)
+        time.sleep(0.5)
+
