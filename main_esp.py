@@ -197,7 +197,7 @@ def ejecutar_maniobra (color):
     elif funcion == "Frenar":
         detener_motores()
     elif funcion == "Retroceder":
-        retroceder()
+        retroceso()
     elif funcion == "Cambiar velocidad":
         cambiar_velocidad()
         
