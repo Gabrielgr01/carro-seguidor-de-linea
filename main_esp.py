@@ -207,72 +207,71 @@ def handle_start(pin):
     start_flag = not start_flag
     global irq_pin
     irq_pin = int(str(pin)[4:-1])
-    
 
 ### Función para interpretar el mensaje UART
 def interpretar_mensaje_UART(message):
     global dict_colores_funciones
-    
+    global start_flag
+    msg = ""
+
     lista_datos = message.split(" ")
     size_list = len(lista_datos)
-    print(size_list)
     if size_list == 1:
         if lista_datos[0] == "Inicio":
-            #ejecutar funcion inicio
-            print("encender motores")
+            if start_flag == 0:
+                msg = "-I- Ejecutando inicio"
+                start_flag = 1
+
+                print("encender motores") #ejecutar funcion inicio
         elif lista_datos[0] == "Fin":
-            #ejecutar funcion de apagar motores
-            print("apagar motores")
+            if start_flag == 1:
+                msg = "-I- Ejecutando fin"
+                start_flag = 0
+
+                print("apagar motores") #ejecutar funcion de fin
     elif size_list > 1:
-        color_frenar = lista_datos[0]
-        color_retroceder = lista_datos[1]
-        color_delta_v = lista_datos[2]
-        print (color_frenar)
-        print (color_retroceder)
-        print (color_delta_v)
-        dict_colores_funciones = {
-            "Seguir linea":"Negro",
-            "Corregir_linea":"Blanco",
-            "Frenar":color_frenar,
-            "Retroceder":color_retroceder,
-            "Delta_v":color_delta_v
-        }
+        if start_flag == 0:
+            maniobra_rojo = lista_datos[0]
+            maniobra_verde = lista_datos[1]
+            maniobra_azul = lista_datos[2]
+            dict_colores_funciones = {
+                "Negro":"Seguir Linea",
+                "Blanco":"Corregir Linea",
+                "Rojo":maniobra_rojo,
+                "Verde":maniobra_verde,
+                "Azul":maniobra_azul
+            }
+            msg = "-I- Datos guardados correctamente"
+        else:
+            msg = "-E- El carrito está iniciado"
+    return msg
 
 ####################################
 # Configuracion de la interrupción #
 ####################################
-start_pin.irq(trigger=Pin.IRQ_RISING, handler=handle_start)
+start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
 
 ###################
 # Bucle principal #
 ###################
 while True:
-  
-    #start_flag = 1 # BORRAR ESTA LINEA PARA HABILITAR INTERRUPCION
-    
+    if uart.any():  # Si hay datos disponibles para leer
+        mensaje = uart.readline().decode().strip()
+        print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
+        respuesta = interpretar_mensaje_UART(mensaje)
+        uart.write(respuesta)
+        print(f"Mensaje enviado al ESP32: {respuesta}")
+         
+        print(dict_colores_funciones)
+
     if start_flag == 1:
         led.on()
-        color = detect_color()
-        print(f"Color detectado: {color}")
-        ejecutar_maniobra(color)
-        
-        time.sleep(0.1)
+        print("-I- Carrito iniciado")
+
+        #color = detect_color()
+        #print(f"Color detectado: {color}")
+        #ejecutar_maniobra(color)
     else:
         led.off()
 
-        if uart.any():  # Si hay datos disponibles para leer
-            message = uart.readline().decode().strip() # Hay que ver como interpretar este mensaje
-            # Hay que definir un diccionario que relacione cada color con su función
-            # Ejemplo: Rojo -> Frenar, Azul -> Retroceder
-            print(f"Mensaje recibido de la Raspberry Pi: {message}")
-            
-            response = "Hola Pi\n"
-            uart.write(response)
-            print(f"Mensaje enviado: {response}")
-            
-            interpretar_mensaje_UART(message)
-            print(dict_colores_funciones)
-            
-            time.sleep(1)
-        time.sleep(0.5)
-
+    time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
