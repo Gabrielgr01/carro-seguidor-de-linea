@@ -54,7 +54,7 @@ in3 = Pin(22, Pin.OUT)  # Pin para IN3 del Motor B
 in4 = Pin(23, Pin.OUT)  # Pin para IN4 del Motor B
 enb = PWM(Pin(21), freq=2000)  # Pin para ENB del Motor B (PWM)
 ### Pines Sensores infrarrojos ANALÓGICOS ###
-IR_derecha = ADC(Pin(33))  
+IR_derecha = ADC(Pin(32))  
 IR_izquierda = ADC(Pin(35))
 IR_derecha.atten(ADC.ATTN_11DB)   # Rango completo de 0 a 3.3V
 IR_izquierda.atten(ADC.ATTN_11DB) # Rango completo de 0 a 3.3V

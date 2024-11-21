@@ -9,7 +9,7 @@ bifur_sel = 0
 # Definir los pines de control para el Motor A (usando el L298)
 in1 = Pin(19, Pin.OUT)  # Pin para IN1 del Motor A
 in2 = Pin(18, Pin.OUT)  # Pin para IN2 del Motor A
-ena = PWM(Pin(17), freq=2000)  # Pin para ENA del Motor A (PWM)
+ena = PWM(Pin(5), freq=2000)  # Pin para ENA del Motor A (PWM)
 
 # Definir los pines de control para el Motor B
 in3 = Pin(22, Pin.OUT)  # Pin para IN3 del Motor B
