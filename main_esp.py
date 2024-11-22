@@ -13,7 +13,9 @@ global bifur_sel
 
 start_flag = 0
 threshold = 900  # Menos de 900 es blanco, más de 900 es negro
-velocidad_base = 500  # Velocidad base de los motores
+velocidad_base = 550  # Velocidad base de los motores
+velocidad_inicial = 550 # Velocidad inicial para el arranque
+arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arrancar
 
 # Selector de la dirección de viraje cuando se da una bifurcación
 # 0 --> derecha
@@ -58,10 +60,6 @@ IR_derecha = ADC(Pin(32))
 IR_izquierda = ADC(Pin(35)) 
 IR_derecha.atten(ADC.ATTN_11DB)   # Rango completo de 0 a 3.3V
 IR_izquierda.atten(ADC.ATTN_11DB) # Rango completo de 0 a 3.3V
-### Variables de control ###
-threshold = 900  # Menos de 900 es blanco, más de 900 es negro
-velocidad_base = 550  # Velocidad base de los motores
-velocidad_inicial = 550 # Velocidad inicial para el arranque
 
 #############
 # Funciones #
@@ -286,17 +284,21 @@ while True:
         led.on()
         print("-I- Carrito iniciado")
         
-        arranque("adelante")
-        time.sleep(0.08)  # Delay entre las actualizaciones
-        detener_motores()
-        time.sleep(0.1) # Delay entre las actualizaciones
+        if arranque_bandera == 1:
+            arranque("adelante")
+            arranque_bandera = 0
+        
+        seguir_linea("adelante")
 
-        color = detect_color()
-        print(f"Color detectado: {color}")
+        time.sleep(0.08)  # Delay entre las actualizaciones
+
+        #color = detect_color()
+        #print(f"Color detectado: {color}")
         #ejecutar_maniobra(color)
     else:
         detener_motores()
-
+        arranque_bandera = 1
         led.off()
 
     time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
+
