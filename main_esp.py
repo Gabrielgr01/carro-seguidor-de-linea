@@ -1,5 +1,6 @@
 from machine import UART, Pin, time_pulse_us, PWM, ADC # type: ignore
 import time
+import math
 
 ######################
 # Variables Globales #
@@ -10,12 +11,20 @@ global dict_colores_funciones
 global threshold
 global velocidad_base
 global bifur_sel
+global start_time
 
+start_time = 0
 start_flag = 0
 threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 550  # Velocidad base de los motores
 velocidad_inicial = 550 # Velocidad inicial para el arranque
 arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arrancar
+
+delay_on_sl = 0.08
+delay_off_sl_rapido = 0.1
+delay_off_sl_lento = 0.8
+delay_off_sl = delay_off_sl_rapido
+comparacion_cont_comu = round(0.5/(delay_on_sl + delay_off_sl)) + 1
 
 # Selector de la dirección de viraje cuando se da una bifurcación
 # 0 --> derecha
@@ -97,11 +106,6 @@ def motor_b(direccion, velocidad):
     
     enb.duty(velocidad)
 
-### Función para detener ambos motores ###
-def detener_motores():
-    motor_a("detener", 0)
-    motor_b("detener", 0)
-
 ### Función para seguir la lógica de movimiento ###
 def seguir_linea(dir):
     sensorR = IR_derecha.read()
@@ -144,9 +148,9 @@ def seguir_linea(dir):
             motor_a(dir , giro_b)
             motor_b(dir , giro_a)
     
-    time.sleep(0.08)
+    time.sleep(delay_on_sl)
     detener_motores()
-    time.sleep(0.1)
+    time.sleep(delay_off_sl)
 
 def arranque():
     motor_a("adelante", velocidad_inicial)
@@ -184,6 +188,17 @@ def retroceso():
 
 def cambiar_velocidad():
     print("Ejecutando Cambio Velocidad")
+    if delay_off_sl == delay_off_sl_rapido:
+        delay_off_sl =  delay_off_sl_lento
+    elif delay_off_sl == delay_off_sl_lento:
+        delay_off_sl = delay_off_sl_rapido
+        
+### Función para detener ambos motores ###
+def detener_motores():
+    motor_a("detener", 0)
+    motor_b("detener", 0)
+    #time.sleep(10)
+
 
 ### Función para medir la frecuencia ###
 def read_frequency(color_filter):
@@ -261,6 +276,8 @@ def handle_start(pin):
     start_flag = not start_flag
     global irq_pin
     irq_pin = int(str(pin)[4:-1])
+    
+    print("Interrupt: "+str(start_flag))
 
 ### Función para interpretar el mensaje UART
 def interpretar_mensaje_UART(message):
@@ -300,10 +317,16 @@ def interpretar_mensaje_UART(message):
             msg = "-E- El carrito está iniciado"
     return msg
 
+def test_detener():
+    end_time = time.time()
+    if end_time - start_time > 10:
+        detener_motores()
+        time.sleep(10)
+        start_time = time.time()
 ####################################
 # Configuracion de la interrupción #
 ####################################
-start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
+start_pin.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=handle_start)
 
 ###################
 # Bucle principal #
@@ -311,17 +334,22 @@ start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
 led.on()
 time.sleep(2)
 led.off()
+
+contador_comu = 0
+
 while True:
-    start_flag = 1 # Borrar para activar la interrupción
-    
-    if uart.any():  # Si hay datos disponibles para leer
-        mensaje = uart.readline().decode().strip()
-        print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
-        respuesta = interpretar_mensaje_UART(mensaje)
-        uart.write(respuesta)
-        print(f"Mensaje enviado al ESP32: {respuesta}")
+    #start_flag = 1 # Borrar para activar la interrupción
+
+    if contador_comu == comparacion_cont_comu:
+        if uart.any():  # Si hay datos disponibles para leer
+            mensaje = uart.readline().decode().strip()
+            print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
+            respuesta = interpretar_mensaje_UART(mensaje)
+            uart.write(respuesta)
+            print(f"Mensaje enviado al ESP32: {respuesta}")
          
-        print(dict_colores_funciones)
+            print(dict_colores_funciones)
+        contador_comu = 0
 
     if start_flag == 1:
         led.on()
@@ -331,8 +359,12 @@ while True:
             time.sleep(5)
             arranque()
             arranque_bandera = 0
-        
+
+
         seguir_linea("adelante")
+        test_detener()
+        
+                   
 
 
         #color = detect_color()
@@ -342,5 +374,10 @@ while True:
         detener_motores()
         arranque_bandera = 1
         led.off()
+        
+        time.sleep(delay_on_sl+delay_off_sl)
+        
+    contador_comu += 1
+    #time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
 
-    time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
+
