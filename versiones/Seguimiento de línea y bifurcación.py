@@ -64,10 +64,20 @@ def detener_motores():
     motor_b("detener", 0)
 
 # Función para seguir la lógica de movimiento
-#
+# El parámetro dir indíca la dirección en la que avanza el carro
 def seguir_linea(dir):
     sensorR = IR_derecha.read()
     sensorL = IR_izquierda.read()
+    giro_a = velocidad_base
+    giro_b = 0
+
+    if (dir == "adelante"):
+        giro_a = velocidad_base
+        giro_b = 0
+    elif (dir == "atras"):
+        giro_a = 0
+        giro_b = velocidad_base
+
 
     #print(f"Sensor Derecho: {sensorR}, Izquierdo: {sensorL}")
 
@@ -78,13 +88,13 @@ def seguir_linea(dir):
     
     # Si el sensor izquierdo detecta negro, corregir hacia la izquierda
     elif (sensorL > threshold) and (sensorR < threshold):
-        motor_a(dir , 0)  # Detener motor izquierdo
-        motor_b(dir , velocidad_base)
+        motor_a(dir , giro_b)  # Detener motor izquierdo
+        motor_b(dir , giro_a)
     
     # Si el sensor derecho detecta negro, corregir hacia la derecha
     elif (sensorR > threshold) and (sensorL < threshold):
-        motor_a(dir , velocidad_base)
-        motor_b(dir , 0)  # Detener motor derecho
+        motor_a(dir , giro_a)
+        motor_b(dir , giro_b)  # Detener motor derecho
 
     # Manejo de la bifurcación
     # Si ambos sensores detectan negro se gira en una dirección seleccionada 
@@ -92,12 +102,12 @@ def seguir_linea(dir):
     elif (sensorR > threshold) and (sensorL > threshold):
         
         if (bifur_sel == 0):
-            motor_a(dir , velocidad_base)
-            motor_b(dir , 0) 
+            motor_a(dir , giro_a)
+            motor_b(dir , giro_b) 
 
         elif (bifur_sel == 1):
-            motor_a(dir , 0)
-            motor_b(dir , velocidad_base)
+            motor_a(dir , giro_b)
+            motor_b(dir , giro_a)
         
 
 def arranque():
@@ -106,15 +116,18 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
-    seguir_linea("atras")
-    time.sleep(3)
+    star_time = time.time()
+    while end_time - start_time < 3:
+        seguir_linea("atras")
+        end_time
+    
 
 # Bucle principal
 try:
     time.sleep(15)
     arranque()
     while True:
-        seguir_linea("adelante")
+        seguir_linea("atras")
         time.sleep(0.08)  # Delay entre las actualizaciones
         detener_motores()
         time.sleep(0.1)
