@@ -124,7 +124,7 @@ button_fin.grid(row = 0, column = 2, sticky = "se")
 
 #Frame for the color seleciton
 #Δ_Velocidad
-combo_values = ['Frenar','Retroceder','Delta_V']
+combo_values = ['Frenar','Retroceder','Cambiar Velocidad']
 frame_selcol = tk.Frame(window, bg = up_color)
 frame_selcol.grid(row = 0, column = 0, padx = 30, pady = 30, sticky = 'ew')
 frame_selcol.columnconfigure(0, weight = 1)
