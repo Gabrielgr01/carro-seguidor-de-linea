@@ -116,10 +116,11 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
-    star_time = time.time()
+    start_time = time.time()
+    end_time = start_time
     while end_time - start_time < 3:
         seguir_linea("atras")
-        end_time
+        end_time = time.time()
     
 
 # Bucle principal
@@ -127,7 +128,7 @@ try:
     time.sleep(15)
     arranque()
     while True:
-        seguir_linea("atras")
+        seguir_linea("adelante")
         time.sleep(0.08)  # Delay entre las actualizaciones
         detener_motores()
         time.sleep(0.1)
