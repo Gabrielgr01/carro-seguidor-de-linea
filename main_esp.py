@@ -58,8 +58,10 @@ enb = PWM(Pin(21), freq=2000)  # Pin para ENB del Motor B (PWM)
 ### Pines Sensores infrarrojos ANALÓGICOS ###
 IR_derecha = ADC(Pin(32))  
 IR_izquierda = ADC(Pin(35)) 
+IR_atras = ADC(Pin(34)) 
 IR_derecha.atten(ADC.ATTN_11DB)   # Rango completo de 0 a 3.3V
 IR_izquierda.atten(ADC.ATTN_11DB) # Rango completo de 0 a 3.3V
+IR_atras.atten(ADC.ATTN_11DB)  
 
 #############
 # Funciones #
@@ -152,10 +154,33 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
-    star_time = time.time()
+    start_time = time.time()
+    end_time = start_time
+    last_inst = ""
     while end_time - start_time < 3:
-        seguir_linea("atras")
-        end_time
+        
+        sensorAt = IR_atras.read()
+        sensorR = IR_derecha.read()
+        sensorL = IR_izquierda.read()
+
+        if (sensorL > threshold) or (last_inst == "izq" and sensorAt < threshold):
+            motor_a("atras", velocidad_base)
+            motor_b("atras", 0)
+            last_inst = "izq"
+
+        elif (sensorR > threshold) or (last_inst == "der" and sensorAt < threshold):
+            motor_a("atras", 0)
+            motor_b("atras", velocidad_base)
+            last_inst = "der"
+
+        elif (sensorAt > threshold):
+            motor_a("atras", velocidad_base)    
+            motor_b("atras", velocidad_base)    
+
+        else:
+            motor_a("atras", velocidad_base)
+            motor_b("atras", velocidad_base)  
+        end_time = time.time()
 
 def cambiar_velocidad():
     print("Ejecutando Cambio Velocidad")

@@ -18,11 +18,13 @@ enb = PWM(Pin(21), freq=2000)  # Pin para ENB del Motor B (PWM)
 
 # Definir los pines de los sensores infrarrojos ANALÓGICOS
 IR_derecha = ADC(Pin(32))  
-IR_izquierda = ADC(Pin(35)) 
+IR_izquierda = ADC(Pin(35))
+IR_atras = ADC(Pin(34)) 
 
 # Configurar cada sensor para rango completo de 0 a 3.3V
 IR_derecha.atten(ADC.ATTN_11DB)  
-IR_izquierda.atten(ADC.ATTN_11DB)  
+IR_izquierda.atten(ADC.ATTN_11DB)
+IR_atras.atten(ADC.ATTN_11DB)  
 
 threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 550  # Velocidad base de los motores
@@ -88,13 +90,14 @@ def seguir_linea(dir):
     
     # Si el sensor izquierdo detecta negro, corregir hacia la izquierda
     elif (sensorL > threshold) and (sensorR < threshold):
-        motor_a(dir , giro_b)  # Detener motor izquierdo
+        motor_a(dir , giro_b) 
         motor_b(dir , giro_a)
     
     # Si el sensor derecho detecta negro, corregir hacia la derecha
     elif (sensorR > threshold) and (sensorL < threshold):
         motor_a(dir , giro_a)
-        motor_b(dir , giro_b)  # Detener motor derecho
+        motor_b(dir , giro_b) 
+
 
     # Manejo de la bifurcación
     # Si ambos sensores detectan negro se gira en una dirección seleccionada 
@@ -108,7 +111,10 @@ def seguir_linea(dir):
         elif (bifur_sel == 1):
             motor_a(dir , giro_b)
             motor_b(dir , giro_a)
-        
+    
+    time.sleep(0.08)
+    detener_motores()
+    time.sleep(0.1)
 
 def arranque():
     motor_a("adelante", velocidad_inicial)
@@ -118,20 +124,45 @@ def arranque():
 def retroceso():
     start_time = time.time()
     end_time = start_time
+    last_inst = ""
     while end_time - start_time < 3:
-        seguir_linea("atras")
+        
+        sensorAt = IR_atras.read()
+        sensorR = IR_derecha.read()
+        sensorL = IR_izquierda.read()
+
+        if (sensorL > threshold) or (last_inst == "izq" and sensorAt < threshold):
+            motor_a("atras", velocidad_base)
+            motor_b("atras", 0)
+            last_inst = "izq"
+
+        elif (sensorR > threshold) or (last_inst == "der" and sensorAt < threshold):
+            motor_a("atras", 0)
+            motor_b("atras", velocidad_base)
+            last_inst = "der"
+
+        elif (sensorAt > threshold):
+            motor_a("atras", velocidad_base)    
+            motor_b("atras", velocidad_base)    
+
+        else:
+            motor_a("atras", velocidad_base)
+            motor_b("atras", velocidad_base)  
         end_time = time.time()
     
 
 # Bucle principal
 try:
-    time.sleep(15)
-    arranque()
+    time.sleep(10)
+    #arranque()
     while True:
+    #retroceso()
         seguir_linea("adelante")
-        time.sleep(0.08)  # Delay entre las actualizaciones
-        detener_motores()
-        time.sleep(0.1)
+    
+    #time.sleep(5)
+    #retroceso()
+
 finally:
     detener_motores()
+
 
