@@ -11,7 +11,9 @@ global dict_colores_funciones
 global threshold
 global velocidad_base
 global bifur_sel
+global start_time
 
+start_time = 0
 start_flag = 0
 threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 550  # Velocidad base de los motores
@@ -102,11 +104,6 @@ def motor_b(direccion, velocidad):
     
     enb.duty(velocidad)
 
-### Función para detener ambos motores ###
-def detener_motores():
-    motor_a("detener", 0)
-    motor_b("detener", 0)
-
 ### Función para seguir la lógica de movimiento ###
 def seguir_linea(dir):
     sensorR = IR_derecha.read()
@@ -171,7 +168,12 @@ def cambiar_velocidad():
         delay_off_sl =  delay_off_sl_lento
     elif delay_off_sl == delay_off_sl_lento:
         delay_off_sl = delay_off_sl_rapido
-
+        
+### Función para detener ambos motores ###
+def detener_motores():
+    motor_a("detener", 0)
+    motor_b("detener", 0)
+    #time.sleep(10)
 
 
 ### Función para medir la frecuencia ###
@@ -250,6 +252,8 @@ def handle_start(pin):
     start_flag = not start_flag
     global irq_pin
     irq_pin = int(str(pin)[4:-1])
+    
+    print("Interrupt: "+str(start_flag))
 
 ### Función para interpretar el mensaje UART
 def interpretar_mensaje_UART(message):
@@ -289,10 +293,16 @@ def interpretar_mensaje_UART(message):
             msg = "-E- El carrito está iniciado"
     return msg
 
+def test_detener():
+    end_time = time.time()
+    if end_time - start_time > 10:
+        detener_motores()
+        time.sleep(10)
+        start_time = time.time()
 ####################################
 # Configuracion de la interrupción #
 ####################################
-start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
+start_pin.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=handle_start)
 
 ###################
 # Bucle principal #
@@ -305,7 +315,7 @@ contador_comu = 0
 
 while True:
     #start_flag = 1 # Borrar para activar la interrupción
-    
+
     if contador_comu == comparacion_cont_comu:
         if uart.any():  # Si hay datos disponibles para leer
             mensaje = uart.readline().decode().strip()
@@ -325,8 +335,12 @@ while True:
             time.sleep(5)
             arranque()
             arranque_bandera = 0
-        
+
+
         seguir_linea("adelante")
+        test_detener()
+        
+                   
 
 
         #color = detect_color()
@@ -341,4 +355,5 @@ while True:
         
     contador_comu += 1
     #time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
+
 
