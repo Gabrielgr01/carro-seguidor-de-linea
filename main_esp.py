@@ -12,6 +12,7 @@ global threshold
 global velocidad_base
 global bifur_sel
 global start_time
+global compare_cambio_color_flag
 
 start_time = 0
 start_flag = 0
@@ -19,6 +20,9 @@ threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 550  # Velocidad base de los motores
 velocidad_inicial = 550 # Velocidad inicial para el arranque
 arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arrancar
+ejecutar_maniobra_flag = 1
+cambio_color_count = 0
+compare_cambio_color_flag = 0
 
 delay_on_sl = 0.08
 delay_off_sl_rapido = 0.1
@@ -158,6 +162,7 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
+    global compare_cambio_color_flag
     start_time = time.time()
     end_time = start_time
     last_inst = ""
@@ -184,9 +189,12 @@ def retroceso():
         else:
             motor_a("atras", velocidad_base)
             motor_b("atras", velocidad_base)
+        end_time = time.time()
         time.sleep(delay_on_sl)
         detener_motores()
         time.sleep(delay_off_sl_rapido) 
+
+        compare_cambio_color_flag = 1
                     
 
 def cambiar_velocidad():
@@ -267,16 +275,15 @@ def detect_color():
 def ejecutar_maniobra (color):
     global dict_colores_funciones
     funcion = dict_colores_funciones[color]
-    if funcion == "Seguir linea":
-        seguir_linea()
-    elif funcion == "Frenar":
+    if funcion == "Frenar":
+        print("Ejecutando FRENAR")
         detener_motores()
     elif funcion == "Retroceder":
+        print("Ejecutando RETROCEDER")
         retroceso()
     elif funcion == "Cambiar velocidad":
+        print("Ejecutando CAMBIO VELOCIDAD")
         cambiar_velocidad()
-        
-    # ... agregar maniobra para el color Blanco
 
 ### Función para manejar la interrución de start ###
 def handle_start(pin):
@@ -333,9 +340,7 @@ def test_detener():
         start_time = time.time()
         
 def test_retroceso():
-    end_time = time.time()
-    if end_time - start_time > 10:
-        retroceso()
+    retroceso()
         
 def test_cambio_velocidad():
     global start_time
@@ -343,6 +348,12 @@ def test_cambio_velocidad():
     if end_time - start_time > 10:
         cambiar_velocidad()
         start_time = time.time()
+
+def compare_cambio_color(color_actual, color_anterior):
+    if (color_actual != color_anterior) and (color_actual != "Blanco") and (color_anterior != "Blanco"):
+        return 1
+    else:
+        return 0
 
 ####################################
 # Configuracion de la interrupción #
@@ -359,7 +370,7 @@ led.off()
 contador_comu = 0
 
 while True:
-    start_flag = 1 # Borrar para activar la interrupción
+    start_flag = 1 # Comentar para activar la interrupción
 
     if contador_comu == comparacion_cont_comu:
         if uart.any():  # Si hay datos disponibles para leer
@@ -379,19 +390,34 @@ while True:
             print("-I- Carrito iniciado")
             time.sleep(5)
             arranque()
-            arranque_bandera = 0
-
+            arranque_bandera = 0 
 
         seguir_linea("adelante")
+
+        color = detect_color()
+        print(f"Color detectado: {color}")
+        color_anterior = color_actual
+        color_actual = color
+        if color == "Negro":
+            if compare_cambio_color_flag and (cambio_color_count >= 2):
+                ejecutar_maniobra_flag = 1
+                cambio_color_count = 0
+                compare_cambio_color_flag = 0
+            elif compare_cambio_color_flag == 0:
+                ejecutar_maniobra_flag = 1
+        if ((color != "Negro") and (ejecutar_maniobra_flag == 1)):
+            ejecutar_maniobra(color)
+            ejecutar_maniobra_flag = 0
+
+        if compare_cambio_color_flag == 1:
+            cambio_color = compare_cambio_color(color_actual, color_anterior)
+            if cambio_color == 1:
+                cambio_color_count += 1
+
+        ### TESTs maniobras ###
         #test_detener()
-        #retroceso()
-        test_cambio_velocidad()
-                   
-
-
-        #color = detect_color()
-        #print(f"Color detectado: {color}")
-        #ejecutar_maniobra(color)
+        #test_retroceso()
+        #test_cambio_velocidad()
     else:
         detener_motores()
         arranque_bandera = 1
