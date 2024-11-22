@@ -183,15 +183,16 @@ def retroceso():
 
         else:
             motor_a("atras", velocidad_base)
-            motor_b("atras", velocidad_base)
-
-        time.sleep(delay_on_sl)
-        detener_motores()
-        time.sleep(delay_off_sl_rapido) 
+            motor_b("atras", velocidad_base)  
         end_time = time.time()
 
 def cambiar_velocidad():
+    global delay_off_sl
+    global delay_off_sl_rapido
+    global delay_off_sl_lento
+    
     print("Ejecutando Cambio Velocidad")
+    
     if delay_off_sl == delay_off_sl_rapido:
         delay_off_sl =  delay_off_sl_lento
     elif delay_off_sl == delay_off_sl_lento:
@@ -327,6 +328,19 @@ def test_detener():
         detener_motores()
         time.sleep(10)
         start_time = time.time()
+        
+def test_retroceso():
+    end_time = time.time()
+    if end_time - start_time > 10:
+        retroceso()
+        
+def test_cambio_velocidad():
+    global start_time
+    end_time = time.time()
+    if end_time - start_time > 10:
+        cambiar_velocidad()
+        start_time = time.time()
+
 ####################################
 # Configuracion de la interrupción #
 ####################################
@@ -342,7 +356,7 @@ led.off()
 contador_comu = 0
 
 while True:
-    #start_flag = 1 # Borrar para activar la interrupción
+    start_flag = 1 # Borrar para activar la interrupción
 
     if contador_comu == comparacion_cont_comu:
         if uart.any():  # Si hay datos disponibles para leer
@@ -366,8 +380,9 @@ while True:
 
 
         seguir_linea("adelante")
-        test_detener()
-        
+        #test_detener()
+        #retroceso()
+        test_cambio_velocidad()
                    
 
 
@@ -383,5 +398,3 @@ while True:
         
     contador_comu += 1
     #time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
-
-
