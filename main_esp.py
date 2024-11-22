@@ -23,11 +23,19 @@ arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arranca
 ejecutar_maniobra_flag = 1
 cambio_color_count = 0
 compare_cambio_color_flag = 0
+color_anterior = "Negro"
+color_actual = "Negro"
 
-delay_on_sl = 0.08
+delay_on_sl_rapido = 0.08
+delay_on_sl_lento = 0.08
+delay_on_sl = delay_on_sl_rapido
 delay_off_sl_rapido = 0.1
-delay_off_sl_lento = 0.8
+delay_off_sl_lento = 0.4
 delay_off_sl = delay_off_sl_rapido
+
+delay_on_retroceso = 0.08
+delay_off_retroceso = 0.1
+
 comparacion_cont_comu = round(0.5/(delay_on_sl + delay_off_sl)) + 1
 
 # Selector de la dirección de viraje cuando se da una bifurcación
@@ -41,7 +49,7 @@ dict_colores_funciones = {
     "Blanco":"Corregir Linea",
     "Rojo":"Frenar",
     "Verde":"Retroceder",
-    "Azul":"Delta_v"
+    "Azul":"Cambiar Velocidad"
 }
 
 
@@ -159,7 +167,7 @@ def seguir_linea(dir):
 def arranque():
     motor_a("adelante", velocidad_inicial)
     motor_b("adelante", velocidad_inicial)
-    time.sleep(0.2)
+    time.sleep(0.1)
 
 def retroceso():
     global compare_cambio_color_flag
@@ -190,9 +198,9 @@ def retroceso():
             motor_a("atras", velocidad_base)
             motor_b("atras", velocidad_base)
         end_time = time.time()
-        time.sleep(delay_on_sl)
+        time.sleep(delay_on_retroceso)
         detener_motores()
-        time.sleep(delay_off_sl_rapido) 
+        time.sleep(delay_off_retroceso) 
 
         compare_cambio_color_flag = 1
                     
@@ -201,14 +209,25 @@ def cambiar_velocidad():
     global delay_off_sl
     global delay_off_sl_rapido
     global delay_off_sl_lento
-    
-    print("Ejecutando Cambio Velocidad")
+    global delay_on_sl
+    global delay_on_sl_rapido
+    global delay_on_sl_lento
     
     if delay_off_sl == delay_off_sl_rapido:
         delay_off_sl =  delay_off_sl_lento
     elif delay_off_sl == delay_off_sl_lento:
         delay_off_sl = delay_off_sl_rapido
-        
+    
+    #if delay_on_sl == delay_on_sl_rapido:
+    #    delay_on_sl = delay_on_sl_lento
+    #elif delay_on_sl == delay_on_sl_lento:
+    #    delay_on_sl = delay_on_sl_rapido
+     
+     
+def frenar():
+    detener_motores()
+    time.sleep(10)
+     
 ### Función para detener ambos motores ###
 def detener_motores():
     motor_a("detener", 0)
@@ -232,7 +251,7 @@ def detect_single_color():
     red = read_frequency((0, 0))
     green = read_frequency((1, 1))
     blue = read_frequency((0, 1))
-    print(f"R: {red}, G: {green}, B: {blue}")
+    #print(f"R: {red}, G: {green}, B: {blue}")
     
     # Criterios para detectar colores
     if red < 40 and green < 40 and blue < 40:
@@ -260,7 +279,7 @@ def detect_color():
 
     # Determinar el color con más ocurrencias
     detected_color = max(counts, key=counts.get)
-    print(f"Conteo de colores: {counts}")
+    #print(f"Conteo de colores: {counts}")
     return detected_color
 
 #def detect_black():
@@ -277,11 +296,11 @@ def ejecutar_maniobra (color):
     funcion = dict_colores_funciones[color]
     if funcion == "Frenar":
         print("Ejecutando FRENAR")
-        detener_motores()
+        frenar()
     elif funcion == "Retroceder":
         print("Ejecutando RETROCEDER")
         retroceso()
-    elif funcion == "Cambiar velocidad":
+    elif funcion == "Cambiar Velocidad":
         print("Ejecutando CAMBIO VELOCIDAD")
         cambiar_velocidad()
 
@@ -358,7 +377,7 @@ def compare_cambio_color(color_actual, color_anterior):
 ####################################
 # Configuracion de la interrupción #
 ####################################
-start_pin.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=handle_start)
+#start_pin.irq(trigger=Pin.IRQ_FALLING|Pin.IRQ_RISING, handler=handle_start)
 
 ###################
 # Bucle principal #
@@ -386,33 +405,34 @@ while True:
     if start_flag == 1:
         led.on()
         
+        
         if arranque_bandera == 1:
             print("-I- Carrito iniciado")
+            detener_motores()
             time.sleep(5)
-            arranque()
+            #arranque()
             arranque_bandera = 0 
 
         seguir_linea("adelante")
 
-        color = detect_color()
-        print(f"Color detectado: {color}")
-        color_anterior = color_actual
-        color_actual = color
-        if color == "Negro":
-            if compare_cambio_color_flag and (cambio_color_count >= 2):
-                ejecutar_maniobra_flag = 1
-                cambio_color_count = 0
-                compare_cambio_color_flag = 0
-            elif compare_cambio_color_flag == 0:
-                ejecutar_maniobra_flag = 1
-        if ((color != "Negro") and (ejecutar_maniobra_flag == 1)):
-            ejecutar_maniobra(color)
-            ejecutar_maniobra_flag = 0
-
-        if compare_cambio_color_flag == 1:
-            cambio_color = compare_cambio_color(color_actual, color_anterior)
-            if cambio_color == 1:
-                cambio_color_count += 1
+        #color = detect_color()
+        #print(f"Color detectado: {color}")
+        #if color == "Negro":
+        #    if compare_cambio_color_flag and (cambio_color_count >= 2):
+        #        ejecutar_maniobra_flag = 1
+        #        cambio_color_count = 0
+        #        compare_cambio_color_flag = 0
+        #    elif compare_cambio_color_flag == 0:
+        #        ejecutar_maniobra_flag = 1
+        #if ((color != "Negro") and (ejecutar_maniobra_flag == 1)):
+        #    ejecutar_maniobra(color)
+        #    ejecutar_maniobra_flag = 0
+        #if compare_cambio_color_flag == 1:
+        #    color_anterior = color_actual
+        #    color_actual = color
+        #    cambio_color = compare_cambio_color(color_actual, color_anterior)
+        #    if cambio_color == 1:
+        #        cambio_color_count += 1
 
         ### TESTs maniobras ###
         #test_detener()
