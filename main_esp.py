@@ -251,12 +251,12 @@ def detect_single_color():
     red = read_frequency((0, 0))
     green = read_frequency((1, 1))
     blue = read_frequency((0, 1))
-    #print(f"R: {red}, G: {green}, B: {blue}")
+    print(f"R: {red}, G: {green}, B: {blue}")
     
     # Criterios para detectar colores
-    if red < 40 and green < 40 and blue < 40:
+    if red < 1 and green < 1 and blue < 1:
         return "Negro"
-    elif red > 50 and green > 50 and blue > 50:
+    elif red > 3 and green > 3 and blue > 3:
         return "Blanco"
     elif red > green and red > blue:
         return "Rojo"
@@ -270,16 +270,22 @@ def detect_single_color():
 ### Detectar color dominante en 10 mediciones ###
 def detect_color():
     counts = {"Blanco": 0, "Rojo": 0, "Verde": 0, "Azul": 0, "Negro": 0}
+    detected_black = False
 
     for _ in range(10):  # Realizar 10 mediciones
         color = detect_single_color()
+        if color == "Negro":
+            detected_black = True  # Si detecta negro, activamos la bandera
         if color in counts:
             counts[color] += 1
-        #time.sleep(0.1)  # Breve pausa entre mediciones
 
-    # Determinar el color con más ocurrencias
+    if detected_black:  # Si alguna lectura detectó negro
+        print(f"Conteo de colores: {counts} (se detectó Negro en al menos una medición)")
+        return "Negro"
+
+    # Determinar el color con más ocurrencias si no hubo negro
     detected_color = max(counts, key=counts.get)
-    #print(f"Conteo de colores: {counts}")
+    print(f"Conteo de colores: {counts}")
     return detected_color
 
 #def detect_black():
