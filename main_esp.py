@@ -283,7 +283,12 @@ start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
 ###################
 # Bucle principal #
 ###################
+led.on()
+time.sleep(2)
+led.off()
 while True:
+    start_flag = 1 # Borrar para activar la interrupción
+    
     if uart.any():  # Si hay datos disponibles para leer
         mensaje = uart.readline().decode().strip()
         print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
@@ -295,10 +300,11 @@ while True:
 
     if start_flag == 1:
         led.on()
-        print("-I- Carrito iniciado")
         
         if arranque_bandera == 1:
-            arranque("adelante")
+            print("-I- Carrito iniciado")
+            time.sleep(5)
+            arranque()
             arranque_bandera = 0
         
         seguir_linea("adelante")
@@ -313,4 +319,3 @@ while True:
         led.off()
 
     time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
-
