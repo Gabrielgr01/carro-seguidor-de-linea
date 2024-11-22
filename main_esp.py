@@ -20,9 +20,9 @@ arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arranca
 
 delay_on_sl = 0.08
 delay_off_sl_rapido = 0.1
-delay_off_sl_lento = 0.5
+delay_off_sl_lento = 0.8
 delay_off_sl = delay_off_sl_rapido
-comparacion_cont_comu = math.ceil(0.5/(delay_on_sl + delay_off_sl))
+comparacion_cont_comu = round(0.5/(delay_on_sl + delay_off_sl)) + 1
 
 # Selector de la dirección de viraje cuando se da una bifurcación
 # 0 --> derecha
@@ -304,7 +304,7 @@ led.off()
 contador_comu = 0
 
 while True:
-    start_flag = 1 # Borrar para activar la interrupción
+    #start_flag = 1 # Borrar para activar la interrupción
     
     if contador_comu == comparacion_cont_comu:
         if uart.any():  # Si hay datos disponibles para leer
@@ -336,6 +336,9 @@ while True:
         detener_motores()
         arranque_bandera = 1
         led.off()
-
+        
+        time.sleep(delay_on_sl+delay_off_sl)
+        
     contador_comu += 1
     #time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
+
