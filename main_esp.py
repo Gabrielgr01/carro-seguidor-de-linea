@@ -251,12 +251,12 @@ def detect_single_color():
     red = read_frequency((0, 0))
     green = read_frequency((1, 1))
     blue = read_frequency((0, 1))
-    print(f"R: {red}, G: {green}, B: {blue}")
+    #print(f"R: {red}, G: {green}, B: {blue}")
     
     # Criterios para detectar colores
-    if red < 1 and green < 1 and blue < 1:
+    if red < 100 and green < 100 and blue < 100:
         return "Negro"
-    elif red > 3 and green > 3 and blue > 3:
+    elif red > 400 and green > 400 and blue > 400:
         return "Blanco"
     elif red > green and red > blue:
         return "Rojo"
@@ -280,12 +280,12 @@ def detect_color():
             counts[color] += 1
 
     if detected_black:  # Si alguna lectura detectó negro
-        print(f"Conteo de colores: {counts} (se detectó Negro en al menos una medición)")
+        #print(f"Conteo de colores: {counts} (se detectó Negro en al menos una medición)")
         return "Negro"
 
     # Determinar el color con más ocurrencias si no hubo negro
     detected_color = max(counts, key=counts.get)
-    print(f"Conteo de colores: {counts}")
+    #print(f"Conteo de colores: {counts}")
     return detected_color
 
 #def detect_black():
@@ -332,14 +332,10 @@ def interpretar_mensaje_UART(message):
             if start_flag == 0:
                 msg = "-I- Ejecutando inicio"
                 start_flag = 1
-
-                print("encender motores") #ejecutar funcion inicio
         elif lista_datos[0] == "Fin":
             if start_flag == 1:
                 msg = "-I- Ejecutando fin"
                 start_flag = 0
-
-                print("apagar motores") #ejecutar funcion de fin
     elif size_list > 1:
         if start_flag == 0:
             maniobra_rojo = lista_datos[0]
@@ -395,17 +391,17 @@ led.off()
 contador_comu = 0
 
 while True:
-    start_flag = 1 # Comentar para activar la interrupción
+    #start_flag = 1 # Comentar para activar la interrupción e interfaz
 
     if contador_comu == comparacion_cont_comu:
         if uart.any():  # Si hay datos disponibles para leer
             mensaje = uart.readline().decode().strip()
-            print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
             respuesta = interpretar_mensaje_UART(mensaje)
             uart.write(respuesta)
+            print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
             print(f"Mensaje enviado al ESP32: {respuesta}")
          
-            print(dict_colores_funciones)
+            #print(dict_colores_funciones)
         contador_comu = 0
 
     if start_flag == 1:
@@ -421,24 +417,24 @@ while True:
 
         seguir_linea("adelante")
 
-        #color = detect_color()
-        #print(f"Color detectado: {color}")
-        #if color == "Negro":
-        #    if compare_cambio_color_flag and (cambio_color_count >= 2):
-        #        ejecutar_maniobra_flag = 1
-        #        cambio_color_count = 0
-        #        compare_cambio_color_flag = 0
-        #    elif compare_cambio_color_flag == 0:
-        #        ejecutar_maniobra_flag = 1
-        #if ((color != "Negro") and (ejecutar_maniobra_flag == 1)):
-        #    ejecutar_maniobra(color)
-        #    ejecutar_maniobra_flag = 0
-        #if compare_cambio_color_flag == 1:
-        #    color_anterior = color_actual
-        #    color_actual = color
-        #    cambio_color = compare_cambio_color(color_actual, color_anterior)
-        #    if cambio_color == 1:
-        #        cambio_color_count += 1
+        color = detect_color()
+        print(f"Color detectado: {color}")
+        if color == "Negro":
+            if compare_cambio_color_flag and (cambio_color_count >= 2):
+                ejecutar_maniobra_flag = 1
+                cambio_color_count = 0
+                compare_cambio_color_flag = 0
+            elif compare_cambio_color_flag == 0:
+                ejecutar_maniobra_flag = 1
+        if ((color != "Negro") and (ejecutar_maniobra_flag == 1)):
+            ejecutar_maniobra(color)
+            ejecutar_maniobra_flag = 0
+        if compare_cambio_color_flag == 1:
+            color_anterior = color_actual
+            color_actual = color
+            cambio_color = compare_cambio_color(color_actual, color_anterior)
+            if cambio_color == 1:
+                cambio_color_count += 1
 
         ### TESTs maniobras ###
         #test_detener()
