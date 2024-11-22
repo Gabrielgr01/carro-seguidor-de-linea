@@ -104,8 +104,15 @@ def detener_motores():
 def seguir_linea(dir):
     sensorR = IR_derecha.read()
     sensorL = IR_izquierda.read()
+    giro_a = velocidad_base
+    giro_b = 0
 
-    #print(f"Sensor Derecho: {sensorR}, Izquierdo: {sensorL}")
+    if (dir == "adelante"):
+        giro_a = velocidad_base
+        giro_b = 0
+    elif (dir == "atras"):
+        giro_a = 0
+        giro_b = velocidad_base
 
     # Si ambos sensores están en blanco, avanzar en línea recta
     if sensorL < threshold and sensorR < threshold:
@@ -114,13 +121,13 @@ def seguir_linea(dir):
     
     # Si el sensor izquierdo detecta negro, corregir hacia la izquierda
     elif (sensorL > threshold) and (sensorR < threshold):
-        motor_a(dir , 0)  # Detener motor izquierdo
-        motor_b(dir , velocidad_base)
+        motor_a(dir , giro_b)  # Detener motor izquierdo
+        motor_b(dir , giro_a)
     
     # Si el sensor derecho detecta negro, corregir hacia la derecha
     elif (sensorR > threshold) and (sensorL < threshold):
-        motor_a(dir , velocidad_base)
-        motor_b(dir , 0)  # Detener motor derecho
+        motor_a(dir , giro_a)
+        motor_b(dir , giro_b)  # Detener motor derecho
 
     # Manejo de la bifurcación
     # Si ambos sensores detectan negro se gira en una dirección seleccionada 
@@ -128,12 +135,16 @@ def seguir_linea(dir):
     elif (sensorR > threshold) and (sensorL > threshold):
         
         if (bifur_sel == 0):
-            motor_a(dir , velocidad_base)
-            motor_b(dir , 0) 
+            motor_a(dir , giro_a)
+            motor_b(dir , giro_b)
 
         elif (bifur_sel == 1):
-            motor_a(dir , 0)
-            motor_b(dir , velocidad_base)
+            motor_a(dir , giro_b)
+            motor_b(dir , giro_a)
+    
+    time.sleep(0.08)
+    detener_motores()
+    time.sleep(0.1)
 
 def arranque():
     motor_a("adelante", velocidad_inicial)
@@ -141,8 +152,10 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
-    seguir_linea("atras")
-    time.sleep(3)
+    star_time = time.time()
+    while end_time - start_time < 3:
+        seguir_linea("atras")
+        end_time
 
 def cambiar_velocidad():
     print("Ejecutando Cambio Velocidad")
@@ -290,7 +303,6 @@ while True:
         
         seguir_linea("adelante")
 
-        time.sleep(0.08)  # Delay entre las actualizaciones
 
         #color = detect_color()
         #print(f"Color detectado: {color}")
