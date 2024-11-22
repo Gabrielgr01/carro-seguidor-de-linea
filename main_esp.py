@@ -183,8 +183,11 @@ def retroceso():
 
         else:
             motor_a("atras", velocidad_base)
-            motor_b("atras", velocidad_base)  
-        end_time = time.time()
+            motor_b("atras", velocidad_base)
+        time.sleep(delay_on_sl)
+        detener_motores()
+        time.sleep(delay_off_sl_rapido) 
+                    
 
 def cambiar_velocidad():
     global delay_off_sl
