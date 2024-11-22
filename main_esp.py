@@ -1,5 +1,6 @@
 from machine import UART, Pin, time_pulse_us, PWM, ADC # type: ignore
 import time
+import math
 
 ######################
 # Variables Globales #
@@ -16,6 +17,12 @@ threshold = 900  # Menos de 900 es blanco, más de 900 es negro
 velocidad_base = 550  # Velocidad base de los motores
 velocidad_inicial = 550 # Velocidad inicial para el arranque
 arranque_bandera = 1 # 1 para arrancar al inicio del programa, 0 para no arrancar
+
+delay_on_sl = 0.08
+delay_off_sl_rapido = 0.1
+delay_off_sl_lento = 0.5
+delay_off_sl = delay_off_sl_rapido
+comparacion_cont_comu = math.ceil(0.5/(delay_on_sl + delay_off_sl))
 
 # Selector de la dirección de viraje cuando se da una bifurcación
 # 0 --> derecha
@@ -142,9 +149,9 @@ def seguir_linea(dir):
             motor_a(dir , giro_b)
             motor_b(dir , giro_a)
     
-    time.sleep(0.08)
+    time.sleep(delay_on_sl)
     detener_motores()
-    time.sleep(0.1)
+    time.sleep(delay_off_sl)
 
 def arranque():
     motor_a("adelante", velocidad_inicial)
@@ -152,13 +159,20 @@ def arranque():
     time.sleep(0.2)
 
 def retroceso():
-    star_time = time.time()
+    start_time = time.time()
+    end_time = start_time
     while end_time - start_time < 3:
         seguir_linea("atras")
-        end_time
+        end_time = time.time()
 
 def cambiar_velocidad():
     print("Ejecutando Cambio Velocidad")
+    if delay_off_sl == delay_off_sl_rapido:
+        delay_off_sl =  delay_off_sl_lento
+    elif delay_off_sl == delay_off_sl_lento:
+        delay_off_sl = delay_off_sl_rapido
+
+
 
 ### Función para medir la frecuencia ###
 def read_frequency(color_filter):
@@ -286,17 +300,22 @@ start_pin.irq(trigger=Pin.IRQ_FALLING, handler=handle_start)
 led.on()
 time.sleep(2)
 led.off()
+
+contador_comu = 0
+
 while True:
     start_flag = 1 # Borrar para activar la interrupción
     
-    if uart.any():  # Si hay datos disponibles para leer
-        mensaje = uart.readline().decode().strip()
-        print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
-        respuesta = interpretar_mensaje_UART(mensaje)
-        uart.write(respuesta)
-        print(f"Mensaje enviado al ESP32: {respuesta}")
+    if contador_comu == comparacion_cont_comu:
+        if uart.any():  # Si hay datos disponibles para leer
+            mensaje = uart.readline().decode().strip()
+            print(f"Mensaje recibido de la Raspberry Pi: {mensaje}")
+            respuesta = interpretar_mensaje_UART(mensaje)
+            uart.write(respuesta)
+            print(f"Mensaje enviado al ESP32: {respuesta}")
          
-        print(dict_colores_funciones)
+            print(dict_colores_funciones)
+        contador_comu = 0
 
     if start_flag == 1:
         led.on()
@@ -318,4 +337,5 @@ while True:
         arranque_bandera = 1
         led.off()
 
-    time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
+    contador_comu += 1
+    #time.sleep(0.5) # Sleep necesario para que le de tiempo al buffer de datos de recibir todos los bits     
