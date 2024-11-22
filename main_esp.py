@@ -154,39 +154,55 @@ def read_frequency(color_filter):
     # Configuración del filtro de color (S2 y S3)
     S2.value(color_filter[0])
     S3.value(color_filter[1])
-    time.sleep(0.1)  # Pequeña pausa para estabilizar
-    pulse_time = time_pulse_us(OUT, 1, 1000000)  # Tiempo de pulso en microsegundos
-    if pulse_time < 0:
+    time.sleep(0.05)  # Pequeña pausa para estabilizar 0.05 mejor valor hasta ahora
+    pulse_time = time_pulse_us(OUT, 1, 10000)  # Tiempo de pulso en microsegundos
+    if pulse_time <= 0:
         return 0  # Error de lectura
-    return 1000000 // pulse_time  # Convertir a frecuencia en Hz
+    return 10000 // pulse_time  # Convertir a frecuencia en Hz
 
 ### Función para detectar color dominante ###
-def detect_color():
+def detect_single_color():
     red = read_frequency((0, 0))
     green = read_frequency((1, 1))
     blue = read_frequency((0, 1))
-    
     print(f"R: {red}, G: {green}, B: {blue}")
     
-    # Umbrales para distinguir colores
-    if red > green and red > blue:
+    # Criterios para detectar colores
+    if red < 40 and green < 40 and blue < 40:
+        return "Negro"
+    elif red > 50 and green > 50 and blue > 50:
+        return "Blanco"
+    elif red > green and red > blue:
         return "Rojo"
     elif green > red and green > blue:
         return "Verde"
     elif blue > red and blue > green:
         return "Azul"
-    elif red < 50 and green < 50 and blue < 50:
-        return "Negro"
     else:
-        return "Blanco"
+        return "Desconocido"
 
-def detect_black():
-    black = read_frequency((1, 0))
-    umbral = 50
-    if black < umbral:
-        return True
-    elif black > umbral:
-        return False
+### Detectar color dominante en 10 mediciones ###
+def detect_color():
+    counts = {"Blanco": 0, "Rojo": 0, "Verde": 0, "Azul": 0, "Negro": 0}
+
+    for _ in range(10):  # Realizar 10 mediciones
+        color = detect_single_color()
+        if color in counts:
+            counts[color] += 1
+        #time.sleep(0.1)  # Breve pausa entre mediciones
+
+    # Determinar el color con más ocurrencias
+    detected_color = max(counts, key=counts.get)
+    print(f"Conteo de colores: {counts}")
+    return detected_color
+
+#def detect_black():
+#    black = read_frequency((1, 0))
+#    umbral = 50
+#    if black < umbral:
+#        return True
+#    elif black > umbral:
+#        return False
     
 ### Función para ejecutar la maniobra del carrito ###
 def ejecutar_maniobra (color):
@@ -275,8 +291,8 @@ while True:
         detener_motores()
         time.sleep(0.1) # Delay entre las actualizaciones
 
-        #color = detect_color()
-        #print(f"Color detectado: {color}")
+        color = detect_color()
+        print(f"Color detectado: {color}")
         #ejecutar_maniobra(color)
     else:
         detener_motores()
